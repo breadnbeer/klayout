@@ -98,7 +98,7 @@ public:
   /**
    *  @brief Constructor
    */
-  MacroEditorDialog (lay::PluginRoot *pr, lym::MacroCollection *root);
+  MacroEditorDialog (lay::Dispatcher *pr, lym::MacroCollection *root);
 
   /**
    *  @brief Destructor
@@ -186,6 +186,7 @@ private slots:
   void new_folder_button_clicked ();
   void save_all_button_clicked ();
   void save_button_clicked ();
+  void save_as_button_clicked ();
   void run_button_clicked ();
   void run_this_button_clicked ();
   void single_step_button_clicked ();
@@ -255,6 +256,7 @@ private:
   lym::Macro *create_macro_here(const char *name = 0);
   void move_subfolder (lym::MacroCollection *source, lym::MacroCollection *target);
   lay::MacroEditorPage *create_page (lym::Macro *macro);
+  void open_macro (lym::Macro *macro);
   void ensure_writeable_collection_selected ();
   void update_console_text ();
   void start_exec (gsi::Interpreter *interpreter);
@@ -289,7 +291,7 @@ private:
   bool configure (const std::string &name, const std::string &value);
   void config_finalize ();
 
-  lay::PluginRoot *mp_plugin_root;
+  lay::Dispatcher *mp_plugin_root;
   lym::MacroCollection *mp_root;
   bool m_first_show;
   bool m_in_processing;

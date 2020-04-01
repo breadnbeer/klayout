@@ -90,9 +90,9 @@ static db::NetTracerNet trace (db::NetTracer &tracer, const db::Layout &layout, 
   return db::NetTracerNet (tracer, db::ICplxTrans (), layout, cell.cell_index (), std::string (), std::string (), tracer_data);
 }
 
-void run_test (tl::TestBase *_this, const std::string &file, const db::NetTracerTechnologyComponent &tc, const db::LayerProperties &lp_start, const db::Point &p_start, const std::string &file_au, const char *net_name = 0)
+void run_test (tl::TestBase *_this, const std::string &file, const db::NetTracerTechnologyComponent &tc, const db::LayerProperties &lp_start, const db::Point &p_start, const std::string &file_au, const char *net_name = 0, size_t depth = 0)
 {
-  db::Manager m;
+  db::Manager m (false);
 
   db::Layout layout_org (&m);
   {
@@ -107,10 +107,16 @@ void run_test (tl::TestBase *_this, const std::string &file, const db::NetTracer
   const db::Cell &cell = layout_org.cell (*layout_org.begin_top_down ());
 
   db::NetTracer tracer;
+  tracer.set_trace_depth (depth);
   db::NetTracerNet net = trace (tracer, layout_org, cell, tc, layer_for (layout_org, lp_start), p_start);
 
   if (net_name) {
     EXPECT_EQ (net.name (), std::string (net_name));
+  }
+
+  EXPECT_EQ (net.incomplete (), depth != 0);
+  if (depth > 0) {
+    EXPECT_EQ (net.size () <= depth, true);
   }
 
   db::Layout layout_net;
@@ -126,7 +132,7 @@ void run_test (tl::TestBase *_this, const std::string &file, const db::NetTracer
 
 void run_test2 (tl::TestBase *_this, const std::string &file, const db::NetTracerTechnologyComponent &tc, const db::LayerProperties &lp_start, const db::Point &p_start, const db::LayerProperties &lp_stop, const db::Point &p_stop, const std::string &file_au, const char *net_name = 0)
 {
-  db::Manager m;
+  db::Manager m (false);
 
   db::Layout layout_org (&m);
   {
@@ -337,7 +343,19 @@ TEST(6)
   run_test (_this, file, tc, db::LayerProperties (1, 0), db::Point (-2250, -900), file_au, "IN_B");
 }
 
-TEST(7) 
+TEST(6b)
+{
+  std::string file = "t6.oas.gz";
+  std::string file_au = "t6b_net.oas.gz";
+
+  db::NetTracerTechnologyComponent tc;
+  tc.add (connection ("1-10", "2", "3"));
+  tc.add (connection ("3", "4", "5"));
+
+  run_test (_this, file, tc, db::LayerProperties (1, 0), db::Point (-2250, -900), file_au, "IN_B", 10);
+}
+
+TEST(7)
 {
   std::string file = "t7.oas.gz";
   std::string file_au = "t7_net.oas.gz";

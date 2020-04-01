@@ -57,8 +57,7 @@ namespace lay
 {
 
 class MainWindow;
-class PluginRootToMainWindow;
-class PluginRoot;
+class Dispatcher;
 class ProgressReporter;
 class ProgressBar;
 
@@ -199,16 +198,6 @@ public:
   std::vector<std::string> get_config_names () const;
 
   /**
-   *  @brief Gets a value indicating whether the give special application flag is set
-   *
-   *  Special application flags are ways to introduce debug or flags for special
-   *  use cases. Such flags have a name and currently are controlled externally by
-   *  an environment variable called "KLAYOUT_x" where x is the name. If that
-   *  variable is set and the value is non-empty, the flag is regarded set.
-   */
-  bool special_app_flag (const std::string &name);
-
-  /**
    *  @brief Return a reference to the Ruby interpreter
    */
   gsi::Interpreter &ruby_interpreter ()
@@ -321,7 +310,7 @@ protected:
   virtual void shutdown ();
   virtual void prepare_recording (const std::string &gtf_record, bool gtf_record_incremental);
   virtual void start_recording ();
-  virtual lay::PluginRoot *plugin_root () const = 0;
+  virtual lay::Dispatcher *dispatcher () const = 0;
   virtual void finish ();
   virtual void process_events_impl (QEventLoop::ProcessEventsFlags flags, bool silent = false);
 
@@ -441,11 +430,10 @@ protected:
   virtual void start_recording ();
   virtual void process_events_impl (QEventLoop::ProcessEventsFlags flags, bool silent);
 
-  virtual lay::PluginRoot *plugin_root () const;
+  virtual lay::Dispatcher *dispatcher () const;
 
 private:
   MainWindow *mp_mw;
-  PluginRootToMainWindow *mp_plugin_root;
   gtf::Recorder *mp_recorder;
 };
 
@@ -493,15 +481,15 @@ protected:
   virtual void setup ();
   virtual void shutdown ();
 
-  virtual lay::PluginRoot *plugin_root () const
+  virtual lay::Dispatcher *dispatcher () const
   {
-    return mp_plugin_root;
+    return mp_dispatcher;
   }
 
 private:
   lay::ProgressReporter *mp_pr;
   lay::ProgressBar *mp_pb;
-  lay::PluginRoot *mp_plugin_root;
+  lay::Dispatcher *mp_dispatcher;
 };
 
 } // namespace lay

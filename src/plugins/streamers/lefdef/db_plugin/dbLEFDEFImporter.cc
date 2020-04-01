@@ -41,6 +41,8 @@ LEFDEFReaderOptions::LEFDEFReaderOptions ()
     m_net_property_name (1),
     m_produce_inst_names (true),
     m_inst_property_name (1),
+    m_produce_pin_names (false),
+    m_pin_property_name (1),
     m_produce_cell_outlines (true),
     m_cell_outline_layer ("OUTLINE"),
     m_produce_placement_blockages (true),
@@ -77,6 +79,8 @@ LEFDEFReaderOptions::LEFDEFReaderOptions (const LEFDEFReaderOptions &d)
     m_net_property_name (d.m_net_property_name),
     m_produce_inst_names (d.m_produce_inst_names),
     m_inst_property_name (d.m_inst_property_name),
+    m_produce_pin_names (d.m_produce_pin_names),
+    m_pin_property_name (d.m_pin_property_name),
     m_produce_cell_outlines (d.m_produce_cell_outlines),
     m_cell_outline_layer (d.m_cell_outline_layer),
     m_produce_placement_blockages (d.m_produce_placement_blockages),
@@ -170,7 +174,7 @@ LEFDEFLayerDelegate::open_layer (db::Layout &layout, const std::string &n, Layer
       lp.datatype = 0;
     }
 
-    std::pair<bool, unsigned int> ll = m_layer_map.logical (lp);
+    std::pair<bool, unsigned int> ll = m_layer_map.logical (lp, layout);
 
     if (ll.first) {
 
@@ -239,7 +243,7 @@ LEFDEFLayerDelegate::open_layer (db::Layout &layout, const std::string &n, Layer
       return std::make_pair (false, 0);
     }
 
-    std::pair<bool, unsigned int> ll = m_layer_map.logical (name);
+    std::pair<bool, unsigned int> ll = m_layer_map.logical (name, layout);
 
     if (ll.first) {
 
@@ -252,14 +256,14 @@ LEFDEFLayerDelegate::open_layer (db::Layout &layout, const std::string &n, Layer
 
     } else {
 
-      std::pair<bool, unsigned int> ll_raw = m_layer_map.logical (n);
+      std::pair<bool, unsigned int> ll_raw = m_layer_map.logical (n, layout);
       int ln = -1;
 
       if (ll_raw.first && (ln = layout.get_properties (ll_raw.second).layer) >= 0) {
 
         m_layer_map.map (db::LayerProperties (name), layout.layers (), db::LayerProperties (ln, dt, name));
         m_layer_map.prepare (layout);
-        return m_layer_map.logical (name);
+        return m_layer_map.logical (name, layout);
 
       } else if (! m_create_layers) {
 
@@ -357,7 +361,8 @@ LEFDEFLayerDelegate::finish (db::Layout &layout)
 LEFDEFImporter::LEFDEFImporter ()
   : mp_progress (0), mp_stream (0), mp_layer_delegate (0),
     m_produce_net_props (false), m_net_prop_name_id (0),
-    m_produce_inst_props (false), m_inst_prop_name_id (0)
+    m_produce_inst_props (false), m_inst_prop_name_id (0),
+    m_produce_pin_props (false), m_pin_prop_name_id (0)
 {
   //  .. nothing yet ..
 }
@@ -391,6 +396,14 @@ LEFDEFImporter::read (tl::InputStream &stream, db::Layout &layout, LEFDEFLayerDe
   if (ld.tech_comp () && ld.tech_comp ()->produce_inst_names ()) {
     m_produce_inst_props = true;
     m_inst_prop_name_id = layout.properties_repository ().prop_name_id (ld.tech_comp ()->inst_property_name ());
+  }
+
+  m_produce_pin_props = false;
+  m_pin_prop_name_id = 0;
+
+  if (ld.tech_comp () && ld.tech_comp ()->produce_pin_names ()) {
+    m_produce_pin_props = true;
+    m_pin_prop_name_id = layout.properties_repository ().prop_name_id (ld.tech_comp ()->pin_property_name ());
   }
 
   try {
@@ -643,38 +656,44 @@ LEFDEFImporter::create_generated_via (std::vector<db::Polygon> &bottom,
   top.push_back (db::Polygon (via_box.enlarged (te).moved (to)));
 
   const char *p = pattern.c_str ();
-  int rp = 0;
+  int rp = pattern.empty () ? -1 : 0;
   const char *p0 = p, *p1 = p;
 
   for (int r = 0; r < rows; ++r) {
 
-    if (rp == 0 && *p) {
+    if (rp == 0) {
 
-      //  read a new row specification
-      rp = 0;
-      while (*p && is_hex_digit (*p)) {
-        rp = (rp * 16) + hex_value (*p++);
-      }
-      if (*p == '_') {
-        ++p;
-      }
-
-      p0 = p;
       if (*p) {
-        while (*p && (is_hex_digit (*p) || toupper (*p) == 'R')) {
+
+        //  read a new row specification
+        rp = 0;
+        while (*p && is_hex_digit (*p)) {
+          rp = (rp * 16) + hex_value (*p++);
+        }
+        if (*p == '_') {
           ++p;
         }
-      }
-      p1 = p;
-      if (*p == '_') {
-        ++p;
+
+        p0 = p;
+        if (*p) {
+          while (*p && (is_hex_digit (*p) || toupper (*p) == 'R')) {
+            ++p;
+          }
+        }
+        p1 = p;
+        if (*p == '_') {
+          ++p;
+        }
+
       }
 
     }
 
-    if (rp > 0) {
+    if (rp != 0) {
 
-      --rp;
+      if (rp > 0) {
+        --rp;
+      }
 
       const char *pp = p0;
       unsigned int d = 0;

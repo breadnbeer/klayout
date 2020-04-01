@@ -44,6 +44,7 @@ extern const std::string cfg_nt_marker_intensity;
 extern const std::string cfg_nt_window_mode;
 extern const std::string cfg_nt_window_dim;
 extern const std::string cfg_nt_max_shapes_highlighted;
+extern const std::string cfg_nt_trace_depth;
 
 enum nt_window_type { NTDontChange = 0, NTFitNet, NTCenter, NTCenterSize };
 
@@ -63,8 +64,8 @@ class NetTracerConfigPage
 public:
   NetTracerConfigPage (QWidget *parent);
 
-  virtual void setup (lay::PluginRoot *root);
-  virtual void commit (lay::PluginRoot *root);
+  virtual void setup (lay::Dispatcher *root);
+  virtual void commit (lay::Dispatcher *root);
 
 public slots:
   void window_changed (int);

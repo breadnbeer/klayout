@@ -57,7 +57,7 @@ class NetTracerDialog
 Q_OBJECT
 
 public:
-  NetTracerDialog (lay::PluginRoot *root, lay::LayoutView *view);
+  NetTracerDialog (lay::Dispatcher *root, lay::LayoutView *view);
   virtual ~NetTracerDialog ();
 
   virtual bool mouse_move_event (const db::DPoint &p, unsigned int buttons, bool prio);
@@ -108,6 +108,8 @@ private:
   lay::FileDialog *mp_export_file_dialog;
   std::string m_export_file_name;
 
+  void commit ();
+  size_t get_trace_depth ();
   void update_highlights ();
   void adjust_view ();
   void clear_markers ();
